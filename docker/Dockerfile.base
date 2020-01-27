@@ -1,0 +1,29 @@
+# Bleeding edge
+FROM php:%VERSION%-apache
+
+# Copy the apache conf
+COPY apache/sites-available/laravel.conf /etc/apache2/sites-available/
+
+# Copy the composer install script
+COPY scripts/php/install-composer ./
+
+# Update the container, get required libs
+RUN apt-get update \
+    && apt-get upgrade \
+    && apt-get install git openssl zip unzip libicu-dev libsqlite3-dev libonig-dev -y
+
+# Install and enable required php extensions
+RUN docker-php-ext-install mbstring mysqli pdo pdo_mysql bcmath intl \
+    && docker-php-ext-enable mbstring mysqli pdo pdo_mysql bcmath intl
+
+# Disable the default site
+RUN a2dissite 000-default
+
+# Enable rewrite
+RUN a2enmod rewrite
+
+# Enable laravel site
+RUN a2ensite laravel.conf
+
+# Install composer
+RUN bash -c "./install-composer"

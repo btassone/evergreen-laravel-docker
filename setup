@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+
+# Grab the environment
+environment="${NODE_ENV}"
+
+# Check if its even set, if it isnt set then assume development
+if [[ "${NODE_ENV}" == "" ]]; then
+  environment="development"
+fi
+
+# [ DOCKER ]
+docker-compose up --build -d
+
+# [ COMPOSER ]
+docker exec server composer install
+
+# [ LARAVEL ]
+if [[ "${environment}" == "development" ]]; then
+  # If its development, migrate freshly and seed
+  docker exec server php artisan migrate:fresh --seed
+else
+  # If production just migrate
+  docker exec server php artisan migrate
+fi
+
+# [ NODE ]
+docker exec node npm install
+docker exec node npm run ${environment}

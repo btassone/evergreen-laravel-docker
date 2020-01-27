@@ -1,0 +1,45 @@
+version: '3.7'
+services:
+  server:
+    container_name: server
+    build: .
+    working_dir: /var/www/html
+    depends_on:
+      - db
+    ports:
+      - %SERVER_HOST_PORT%:%SERVER_CONTAINER_PORT%
+      - %SERVER_HOST_SSL_PORT%:%SERVER_CONTAINER_SSL_PORT%
+    volumes:
+      - ./laravel:/var/www/html
+    env_file:
+      - ./.db.env
+    networks:
+      - app
+  node:
+    container_name: node
+    image: node:13.6
+    user: node
+    working_dir: /var/www/html
+    ports:
+      - %NODE_HOST_PORT%:%NODE_CONTAINER_PORT%
+    volumes:
+      - ./laravel:/var/www/html
+    command: bash -c "tail -f /dev/null"
+    networks:
+      - app
+  db:
+    container_name: db
+    image: mysql:8
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./mysql:/var/lib/mysql
+    ports:
+      - %DB_HOST_PORT%:%DB_CONTAINER_PORT%
+    env_file:
+      - ./.db.env
+    networks:
+      - app
+
+networks:
+  app:
+    driver: bridge

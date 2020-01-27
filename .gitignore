@@ -1,0 +1,5 @@
+laravel
+mysql
+.idea
+*.env
+*laravel.conf
