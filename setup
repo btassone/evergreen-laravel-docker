@@ -72,8 +72,6 @@ docker exec server composer global require "laravel/installer=~1.1"
 docker exec server composer create-project --prefer-dist laravel/laravel .
 docker exec server composer install
 
-sed
-
 ## [ LARAVEL ]
 #if [[ "${ENVIRONMENT}" == "development" ]]; then
 #  # If its development, migrate freshly and seed
