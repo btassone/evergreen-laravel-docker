@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+
+# Disable the default site
+a2dissite 000-default
+
+# Enable rewrite
+a2enmod rewrite
+
+# Enable laravel site
+a2ensite laravel.conf

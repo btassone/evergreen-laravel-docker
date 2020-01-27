@@ -3,3 +3,5 @@ mysql
 .idea
 *.env
 *laravel.conf
+docker-compose.yml
+Dockerfile

@@ -8,9 +8,9 @@
 	# However, you must set it for any further virtual host explicitly.
 	#ServerName www.example.com
 
-	ServerName www.%SITE%.test
-	ServerAlias %SITE%.test
-	ServerAdmin webmaster@%SITE%.test
+	ServerName www.%SITE_NAME%.test
+	ServerAlias %SITE_NAME%.test
+	ServerAdmin webmaster@%SITE_NAME%.test
 
 	DocumentRoot /var/www/html/public
 
@@ -20,9 +20,9 @@
 		Require all granted
 	</Directory>
 
-	ErrorLog /root/%SITE%-error.log
+	ErrorLog /root/%SITE_NAME%-error.log
 	LogLevel warn
-	CustomLog /root/%SITE%-access.log combined
+	CustomLog /root/%SITE_NAME%-access.log combined
 
 	# For most configuration files from conf-available/, which are
 	# enabled or disabled at a global level, it is possible to

@@ -1,28 +1,88 @@
 #!/usr/bin/env bash
 
 # Grab the environment
-environment="${NODE_ENV}"
+ENVIRONMENT="${NODE_ENV}"
 
 # Check if its even set, if it isnt set then assume development
 if [[ "${NODE_ENV}" == "" ]]; then
-  environment="development"
+  ENVIRONMENT="development"
 fi
+
+# Docker compose file
+CF='./docker-compose.yml'
+DF='./Dockerfile'
+LC='./apache/sites-available/laravel.conf'
+
+# Defaults
+SSHP_DEFAULT=80
+SSCP_DEFAULT=80
+SSHSP_DEFAULT=443
+SSCSP_DEFAULT=443
+SNHP_DEFAULT=8080
+SNCP_DEFAULT=8080
+SBHP_DEFAULT=3306
+SDCP_DEFAULT=3306
+SPV_DEFAULT=apache
+
+# Check env sets and use defaults if not for docker-compose
+SERVER_HOST_PORT=$(if [ -z ${SITE_SERVER_HOST_PORT+x} ]; then echo "${SSHP_DEFAULT}"; else echo "${SITE_SERVER_HOST_PORT}"; fi)
+SERVER_CONTAINER_PORT=$(if [ -z ${SITE_SERVER_CONTAINER_PORT+x} ]; then echo "${SSCP_DEFAULT}"; else echo "${SITE_SERVER_CONTAINER_PORT}"; fi)
+SERVER_HOST_SSL_PORT=$(if [ -z ${SITE_SERVER_HOST_SSL_PORT+x} ]; then echo "${SSHSP_DEFAULT}"; else echo "${SITE_SERVER_HOST_SSL_PORT}"; fi)
+SERVER_CONTAINER_SSL_PORT=$(if [ -z ${SITE_SERVER_CONTAINER_SSL_PORT+x} ]; then echo "${SSCSP_DEFAULT}"; else echo "${SITE_SERVER_CONTAINER_SSL_PORT}"; fi)
+NODE_HOST_PORT=$(if [ -z ${SITE_NODE_HOST_PORT+x} ]; then echo "${SNHP_DEFAULT}"; else echo "${SITE_NODE_HOST_PORT}"; fi)
+NODE_CONTAINER_PORT=$(if [ -z ${SITE_NODE_CONTAINER_PORT+x} ]; then echo "${SNCP_DEFAULT}"; else echo "${SITE_NODE_CONTAINER_PORT}"; fi)
+DB_HOST_PORT=$(if [ -z ${SITE_DB_HOST_PORT+x} ]; then echo "${SBHP_DEFAULT}"; else echo "${SITE_DB_HOST_PORT}"; fi)
+DB_CONTAINER_PORT=$(if [ -z ${SITE_DB_CONTAINER_PORT+x} ]; then echo "${SDCP_DEFAULT}"; else echo "${SITE_DB_CONTAINER_PORT}"; fi)
+
+# Check and set php version and use default if not for Dockerfile
+SERVER_PHP_VERSION=$(if [ -z ${SITE_SERVER_PHP_VERSION+x} ]; then echo "${SPV_DEFAULT}"; else echo "${SITE_SERVER_PHP_VERSION}"; fi)
+
+SITE_NAME=$(if [ -z ${SITE_SERVER_NAME+x} ]; then echo "example"; else echo "${SITE_SERVER_NAME}"; fi)
+
+# Copy the files from the base folder
+cp base/docker-compose.yml.base ${CF}
+cp base/Dockerfile.base ./Dockerfile
+cp base/laravel.conf.base ./apache/sites-available/laravel.conf
+
+# Find and replace on docker-compose
+sed -i .bak "s/%SERVER_HOST_PORT%/${SERVER_HOST_PORT}/" ${CF}
+sed -i .bak "s/%SERVER_CONTAINER_PORT%/${SERVER_CONTAINER_PORT}/" ${CF}
+sed -i .bak "s/%SERVER_HOST_SSL_PORT%/${SERVER_HOST_SSL_PORT}/" ${CF}
+sed -i .bak "s/%SERVER_CONTAINER_SSL_PORT%/${SERVER_CONTAINER_SSL_PORT}/" ${CF}
+sed -i .bak "s/%NODE_HOST_PORT%/${NODE_HOST_PORT}/" ${CF}
+sed -i .bak "s/%NODE_CONTAINER_PORT%/${NODE_CONTAINER_PORT}/" ${CF}
+sed -i .bak "s/%DB_HOST_PORT%/${DB_HOST_PORT}/" ${CF}
+sed -i .bak "s/%DB_CONTAINER_PORT%/${DB_CONTAINER_PORT}/" ${CF}
+
+# Remove the bakup
+rm ./docker-compose.yml.bak
+
+# Find and replace on Dockerfile
+sed -i .bak "s/%VERSION%/${SERVER_PHP_VERSION}/" ${DF}
+rm ./Dockerfile.bak
+
+sed -i .bak "s/%SITE_NAME%/${SITE_NAME}/" ${LC}
+rm ./apache/sites-available/laravel.conf.bak
 
 # [ DOCKER ]
 docker-compose up --build -d
 
 # [ COMPOSER ]
+docker exec server composer global require "laravel/installer=~1.1"
+docker exec server composer create-project --prefer-dist laravel/laravel .
 docker exec server composer install
 
-# [ LARAVEL ]
-if [[ "${environment}" == "development" ]]; then
-  # If its development, migrate freshly and seed
-  docker exec server php artisan migrate:fresh --seed
-else
-  # If production just migrate
-  docker exec server php artisan migrate
-fi
+sed
+
+## [ LARAVEL ]
+#if [[ "${ENVIRONMENT}" == "development" ]]; then
+#  # If its development, migrate freshly and seed
+#  docker exec server php artisan migrate:fresh --seed
+#else
+#  # If production just migrate
+#  docker exec server php artisan migrate
+#fi
 
 # [ NODE ]
 docker exec node npm install
-docker exec node npm run ${environment}
+docker exec node npm run ${ENVIRONMENT}
